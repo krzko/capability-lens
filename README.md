@@ -4,6 +4,8 @@
 
 Capability Lens is a sophisticated maturity assessment tool designed to help organisations evaluate and improve their technical capabilities across various domains. Built with modern web technologies and following industry best practices, it provides a comprehensive framework for tracking and enhancing organisational maturity.
 
+<img src="https://raw.githubusercontent.com/krzko/capability-lens/main/docs/images/capability-lens.png" alt="Capability Lens Cover Image" width="100%" height="100%" />
+
 ## Features
 
 ### Maturity Matrices
