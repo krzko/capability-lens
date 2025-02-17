@@ -1,5 +1,39 @@
 import { DateRange } from 'react-day-picker';
 
+export type ComparisonType = 'teams' | 'services' | 'organisations';
+export type MatrixType = 'all' | 'observability' | 'security' | 'dora' | 'cloudNative';
+
+export interface ComparisonData {
+  chartData: Array<{
+    category: string;
+    [key: string]: number | string;
+  }>;
+  insights: Array<{
+    type: 'improvement' | 'gap' | 'recommendation';
+    title: string;
+    description: string;
+    value?: string;
+    trend?: 'up' | 'down';
+  }>;
+  tableData: Array<{
+    category: string;
+    facet: string;
+    entities: {
+      [key: string]: {
+        score: number;
+        delta?: number;
+      };
+    };
+  }>;
+}
+
+export interface ComparisonFilters {
+  comparisonType: ComparisonType;
+  matrixType: MatrixType;
+  entities: string[];
+  dateRange?: DateRange;
+}
+
 export interface ReportsData {
   summaryStats: {
     averageMaturity: number;
@@ -109,4 +143,25 @@ export async function exportReportsData(filters?: ReportsFilters): Promise<Blob>
   }
 
   return response.blob();
+}
+
+export async function fetchComparisonData(filters: ComparisonFilters): Promise<ComparisonData> {
+  const queryParams = new URLSearchParams();
+  queryParams.set('comparisonType', filters.comparisonType);
+  queryParams.set('matrixType', filters.matrixType);
+  queryParams.set('entities', JSON.stringify(filters.entities));
+  
+  if (filters.dateRange?.from) {
+    queryParams.set('fromDate', filters.dateRange.from.toISOString());
+  }
+  if (filters.dateRange?.to) {
+    queryParams.set('toDate', filters.dateRange.to.toISOString());
+  }
+
+  const response = await fetch(`/api/reports/comparison?${queryParams.toString()}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch comparison data');
+  }
+
+  return response.json();
 }
