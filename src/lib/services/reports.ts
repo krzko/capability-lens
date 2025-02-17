@@ -2,6 +2,29 @@ import { DateRange } from 'react-day-picker';
 
 export type ComparisonType = 'teams' | 'services' | 'organisations';
 export type MatrixType = 'all' | 'observability' | 'security' | 'dora' | 'cloudNative';
+export type TimeUnit = 'weeks' | 'months' | 'quarters';
+
+export interface TrendsData {
+  facets: string[];
+  trendData: Array<{
+    date: string;
+    [key: string]: number | string;
+  }>;
+  deltaData: Array<{
+    facet: string;
+    currentScore: number;
+    previousScore: number;
+    changePercentage: number;
+  }>;
+  snapshotData: Array<{
+    facet: string;
+    q1Score: number;
+    q2Score: number;
+    q3Score: number;
+    q4Score: number;
+    trend: 'up' | 'down' | 'stable';
+  }>;
+}
 
 export interface ComparisonData {
   chartData: Array<{
@@ -161,6 +184,32 @@ export async function fetchComparisonData(filters: ComparisonFilters): Promise<C
   const response = await fetch(`/api/reports/comparison?${queryParams.toString()}`);
   if (!response.ok) {
     throw new Error('Failed to fetch comparison data');
+  }
+
+  return response.json();
+}
+
+export interface TrendsFilters {
+  timeUnit: TimeUnit;
+  matrixType: MatrixType;
+  dateRange?: DateRange;
+}
+
+export async function fetchTrendsData(filters: TrendsFilters): Promise<TrendsData> {
+  const queryParams = new URLSearchParams();
+  queryParams.set('timeUnit', filters.timeUnit);
+  queryParams.set('matrixType', filters.matrixType);
+  
+  if (filters.dateRange?.from) {
+    queryParams.set('fromDate', filters.dateRange.from.toISOString());
+  }
+  if (filters.dateRange?.to) {
+    queryParams.set('toDate', filters.dateRange.to.toISOString());
+  }
+
+  const response = await fetch(`/api/reports/trends?${queryParams.toString()}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch trends data');
   }
 
   return response.json();
