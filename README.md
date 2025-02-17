@@ -94,7 +94,12 @@ pnpm prisma db seed
 pnpm dev
 ```
 
-Visit `http://localhost:3000` to access the application.
+Visit `http://localhost:3000` to access the application. Log in with the seed admin user:
+
+```bash
+email: admin@example.com
+password: admin123
+```
 
 ## Contributing
 
