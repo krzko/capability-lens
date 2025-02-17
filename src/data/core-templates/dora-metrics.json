@@ -1,0 +1,131 @@
+{
+  "name": "DORA Metrics Maturity Matrix",
+  "description": "Assess your team's DORA metrics implementation and practices",
+  "version": "1.0.0",
+  "facets": [
+    {
+      "name": "Deployment Frequency",
+      "description": "How often your team successfully releases to production",
+      "levels": [
+        {
+          "number": 1,
+          "name": "Low",
+          "description": "Less than once per month"
+        },
+        {
+          "number": 2,
+          "name": "Medium-Low",
+          "description": "Between once per month and once per week"
+        },
+        {
+          "number": 3,
+          "name": "Medium",
+          "description": "Between once per week and once per day"
+        },
+        {
+          "number": 4,
+          "name": "Medium-High",
+          "description": "Between once per day and multiple times per day"
+        },
+        {
+          "number": 5,
+          "name": "High",
+          "description": "Multiple times per day"
+        }
+      ]
+    },
+    {
+      "name": "Lead Time for Changes",
+      "description": "Time from code commit to code running in production",
+      "levels": [
+        {
+          "number": 1,
+          "name": "Low",
+          "description": "More than six months"
+        },
+        {
+          "number": 2,
+          "name": "Medium-Low",
+          "description": "Between one month and six months"
+        },
+        {
+          "number": 3,
+          "name": "Medium",
+          "description": "Between one week and one month"
+        },
+        {
+          "number": 4,
+          "name": "Medium-High",
+          "description": "Between one day and one week"
+        },
+        {
+          "number": 5,
+          "name": "High",
+          "description": "Less than one day"
+        }
+      ]
+    },
+    {
+      "name": "Time to Restore Service",
+      "description": "Time to restore service after an incident",
+      "levels": [
+        {
+          "number": 1,
+          "name": "Low",
+          "description": "More than one week"
+        },
+        {
+          "number": 2,
+          "name": "Medium-Low",
+          "description": "Between one day and one week"
+        },
+        {
+          "number": 3,
+          "name": "Medium",
+          "description": "Between one hour and one day"
+        },
+        {
+          "number": 4,
+          "name": "Medium-High",
+          "description": "Between one hour and 30 minutes"
+        },
+        {
+          "number": 5,
+          "name": "High",
+          "description": "Less than 30 minutes"
+        }
+      ]
+    },
+    {
+      "name": "Change Failure Rate",
+      "description": "Percentage of changes that result in degraded service",
+      "levels": [
+        {
+          "number": 1,
+          "name": "Low",
+          "description": "More than 45%"
+        },
+        {
+          "number": 2,
+          "name": "Medium-Low",
+          "description": "Between 30-45%"
+        },
+        {
+          "number": 3,
+          "name": "Medium",
+          "description": "Between 15-30%"
+        },
+        {
+          "number": 4,
+          "name": "Medium-High",
+          "description": "Between 7-15%"
+        },
+        {
+          "number": 5,
+          "name": "High",
+          "description": "0-7%"
+        }
+      ]
+    }
+  ]
+}

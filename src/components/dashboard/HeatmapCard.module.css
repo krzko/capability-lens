@@ -1,0 +1,35 @@
+.lowContainer {
+  background-color: #FFF8F6;
+}
+
+.lowCircle {
+  background-color: #FFF1ED;
+}
+
+.lowText {
+  color: #FF5C35;
+}
+
+.mediumContainer {
+  background-color: #F6FEFB;
+}
+
+.mediumCircle {
+  background-color: #ECFDF7;
+}
+
+.mediumText {
+  color: #00B87C;
+}
+
+.highContainer {
+  background-color: #F5F9FF;
+}
+
+.highCircle {
+  background-color: #EBF3FF;
+}
+
+.highText {
+  color: #2E7DFF;
+}
