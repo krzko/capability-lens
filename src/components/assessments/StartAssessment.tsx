@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,15 @@ export function StartAssessment() {
   const { organisedServices, isLoading: servicesLoading } = useAllServicesHierarchy();
   const [selectedService, setSelectedService] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState('');
+
+  // Handle URL parameters
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const serviceId = params.get('serviceId');
+    if (serviceId) {
+      setSelectedService(serviceId);
+    }
+  }, []);
 
   const handleStartAssessment = () => {
     if (selectedService && selectedTemplate) {

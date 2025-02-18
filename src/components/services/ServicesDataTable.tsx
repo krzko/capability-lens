@@ -23,7 +23,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Eye, Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { MoreHorizontal, Eye, Search, ArrowUpDown, ArrowUp, ArrowDown, List, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSort, type SortConfig } from '@/hooks/useSort';
 
@@ -52,6 +52,7 @@ interface ServicesDataTableProps {
   onEdit: (service: Service) => void;
   onDelete: (service: Service) => void;
   onStartAssessment: (service: Service) => void;
+  onViewAssessments?: (service: Service) => void;
 }
 
 export function ServicesDataTable({
@@ -59,6 +60,7 @@ export function ServicesDataTable({
   onEdit,
   onDelete,
   onStartAssessment,
+  onViewAssessments,
 }: ServicesDataTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const { items: sortedServices, sortConfig, requestSort } = useSort(services, { key: 'name', direction: 'asc' });
@@ -215,9 +217,17 @@ export function ServicesDataTable({
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
-                      onClick={() => onStartAssessment(service)}
+                      onClick={() => service.assessments?.length > 0 
+                        ? onViewAssessments?.(service)
+                        : onStartAssessment(service)
+                      }
+                      title={service.assessments?.length > 0 ? 'View Assessments' : 'Start New Assessment'}
                     >
-                      <Eye className="h-4 w-4" />
+                      {service.assessments?.length > 0 ? (
+                        <Eye className="h-4 w-4" />
+                      ) : (
+                        <Play className="h-4 w-4" />
+                      )}
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -230,11 +240,13 @@ export function ServicesDataTable({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        {service.assessments?.length > 0 && (
+                          <DropdownMenuItem onClick={() => onStartAssessment(service)}>
+                            Start Assessment
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem onClick={() => onEdit(service)}>
                           Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onStartAssessment(service)}>
-                          Start Assessment
                         </DropdownMenuItem>
                         <DropdownMenuItem 
                           className="text-red-600"

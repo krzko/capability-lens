@@ -79,7 +79,19 @@ export default function Services() {
   const router = useRouter();
 
   const handleStartAssessment = (service: Service) => {
-    router.push(`/services/${service.id}/assessments/new`);
+    const queryParams = new URLSearchParams({
+      serviceId: service.id,
+      serviceName: service.name,
+      teamId: service.team.id,
+      teamName: service.team.name,
+      orgId: service.team.organisation.id,
+      orgName: service.team.organisation.name
+    }).toString();
+    router.push(`/assessments/new?${queryParams}`);
+  };
+
+  const handleViewAssessments = (service: Service) => {
+    router.push(`/assessments/view?serviceId=${service.id}&serviceName=${encodeURIComponent(service.name)}`);
   };
 
   return (
@@ -118,6 +130,7 @@ export default function Services() {
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onStartAssessment={handleStartAssessment}
+                onViewAssessments={handleViewAssessments}
               />
             </div>
           )}

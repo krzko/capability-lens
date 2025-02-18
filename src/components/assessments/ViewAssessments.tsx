@@ -33,12 +33,34 @@ export function ViewAssessments() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // Get serviceId from URL query parameters
+    const params = new URLSearchParams(window.location.search);
+    const serviceId = params.get('serviceId');
+    if (serviceId) {
+      setSelectedService(serviceId);
+    }
+  }, []);
+
+  useEffect(() => {
     if (selectedService) {
       setLoading(true);
+      console.log('Fetching assessments for service:', selectedService);
       fetch(`/api/services/${selectedService}/assessments`)
-        .then(res => res.json())
-        .then(data => setAssessments(data))
-        .catch(error => console.error('Error fetching assessments:', error))
+        .then(async res => {
+          if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(`API Error: ${errorData.error || res.statusText}`);
+          }
+          return res.json();
+        })
+        .then(data => {
+          console.log('Received assessments:', data);
+          setAssessments(data);
+        })
+        .catch(error => {
+          console.error('Error fetching assessments:', error);
+          // You might want to show this error to the user
+        })
         .finally(() => setLoading(false));
     }
   }, [selectedService]);
@@ -112,7 +134,7 @@ export function ViewAssessments() {
                   <Button
                     variant="outline"
                     className="mt-4"
-                    onClick={() => router.push('/assessments/new')}
+                    onClick={() => router.push(`/services/${selectedService}/assessments/new`)}
                   >
                     Create New Assessment
                   </Button>
