@@ -62,6 +62,11 @@ export function TeamsDataTable({ teams, onView, onEdit, onDelete }: TeamsDataTab
   const [searchQuery, setSearchQuery] = useState("");
   const { items: sortedTeams, sortConfig, requestSort } = useSort(teams, { key: 'name', direction: 'asc' });
 
+  // Debug log team data
+  React.useEffect(() => {
+    console.log('Teams data:', teams);
+  }, [teams]);
+
   const calculateTeamMaturity = (team: any) => {
     const serviceScores = team.services.map((service: any) => {
       if (service.assessments && service.assessments.length > 0) {
@@ -69,13 +74,19 @@ export function TeamsDataTable({ teams, onView, onEdit, onDelete }: TeamsDataTab
           (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         )[0];
         const scores = Object.values(latestAssessment.scores);
-        return scores.reduce((a: number, b: number) => a + b, 0) / scores.length;
+        if (scores.length === 0) return 0;
+        const avgScore = scores.reduce((a: number, b: number) => a + b, 0) / scores.length;
+        console.log(`Service ${service.name} scores:`, scores, 'avg:', avgScore);
+        return avgScore;
       }
       return 0;
-    });
-    return serviceScores.length > 0 
-      ? (serviceScores.reduce((a: number, b: number) => a + b, 0) / serviceScores.length).toFixed(1)
-      : "N/A";
+    }).filter(score => score > 0); // Only include services that have scores
+
+    console.log(`Team ${team.name} service scores:`, serviceScores);
+    if (serviceScores.length === 0) return 0;
+    const teamAvg = (serviceScores.reduce((a: number, b: number) => a + b, 0) / serviceScores.length).toFixed(1);
+    console.log(`Team ${team.name} final avg:`, teamAvg);
+    return teamAvg;
   };
 
   const getAssessmentStatus = (team: any): TeamAssessmentStatus => {
@@ -187,8 +198,8 @@ export function TeamsDataTable({ teams, onView, onEdit, onDelete }: TeamsDataTab
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
                       <MaturityProgress 
-                        value={parseFloat(calculateTeamMaturity(team)) || 0}
-                        showTooltip
+                        score={parseFloat(calculateTeamMaturity(team)) || 0}
+                        size="md"
                       />
                       {team.maturityTrend !== undefined && (
                         <TrendIndicator value={team.maturityTrend} />

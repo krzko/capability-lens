@@ -52,7 +52,21 @@ export async function GET(request: NextRequest) {
           },
       include: {
         organisation: true,
-        services: true,
+        services: {
+          include: {
+            assessments: {
+              orderBy: {
+                createdAt: 'desc'
+              },
+              take: 1,
+              select: {
+                id: true,
+                createdAt: true,
+                scores: true
+              }
+            }
+          }
+        },
       },
     });
 
