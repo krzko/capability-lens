@@ -43,7 +43,16 @@ interface Service {
     id: string;
     createdAt: string;
     scores: Record<string, number>;
-    matrixType?: string;
+    template?: {
+      id: string;
+      name: string;
+      templateSchema: string;
+      facets: Array<{
+        id: string;
+        name: string;
+        description: string;
+      }>;
+    };
   }>;
 }
 
@@ -63,7 +72,49 @@ export function ServicesDataTable({
   onViewAssessments,
 }: ServicesDataTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const { items: sortedServices, sortConfig, requestSort } = useSort(services, { key: 'name', direction: 'asc' });
+  const { items: sortedServices, sortConfig, requestSort } = useSort(services, { key: 'name', direction: 'asc' }, {
+    customSort: {
+      maturityScore: (a, b) => {
+        const scoreA = getMaturityScore(a);
+        const scoreB = getMaturityScore(b);
+        // Sort nulls and zeros to the bottom
+        if (scoreA === 0 && scoreB === 0) return 0;
+        if (scoreA === 0) return 1;
+        if (scoreB === 0) return -1;
+        return scoreB - scoreA; // Descending by default
+      },
+      trend: (a, b) => {
+        const trendA = Number(getTrend(a).toFixed(2));
+        const trendB = Number(getTrend(b).toFixed(2));
+        return trendA - trendB;
+      },
+      status: (a, b) => {
+        const aDate = getNextAssessmentDate(getLastAssessmentDate(a));
+        const bDate = getNextAssessmentDate(getLastAssessmentDate(b));
+        if (!aDate && !bDate) return 0;
+        if (!aDate) return 1;
+        if (!bDate) return -1;
+        return aDate.getTime() - bDate.getTime();
+      },
+      matrixType: (a, b) => getMatrixType(a).localeCompare(getMatrixType(b)),
+      lastAssessmentDate: (a, b) => {
+        const aDate = getLastAssessmentDate(a);
+        const bDate = getLastAssessmentDate(b);
+        if (!aDate && !bDate) return 0;
+        if (!aDate) return 1;
+        if (!bDate) return -1;
+        return aDate.getTime() - bDate.getTime();
+      },
+      nextAssessmentDate: (a, b) => {
+        const aDate = getNextAssessmentDate(getLastAssessmentDate(a));
+        const bDate = getNextAssessmentDate(getLastAssessmentDate(b));
+        if (!aDate && !bDate) return 0;
+        if (!aDate) return 1;
+        if (!bDate) return -1;
+        return aDate.getTime() - bDate.getTime();
+      },
+    },
+  });
 
   const getSortedAssessments = (service: Service) => {
     return [...service.assessments].sort(
@@ -75,11 +126,39 @@ export function ServicesDataTable({
     if (!service.assessments?.length) return 0;
 
     const latestAssessment = getSortedAssessments(service)[0];
-    const scores = Object.values(latestAssessment.scores);
-    if (!scores.length) return 0;
+    if (!latestAssessment.scores || !latestAssessment.template?.facets) return 0;
 
-    const average = scores.reduce((acc, score) => acc + score, 0) / scores.length;
-    return Math.min(average, 5);
+    let totalScore = 0;
+    let totalWeight = 0;
+
+    try {
+      // Try to parse the schema for weights
+      const schema = latestAssessment.template.templateSchema;
+      const weights = typeof schema === 'string' ? 
+        JSON.parse(schema).weights || {} : {};
+
+      // Calculate weighted average
+      latestAssessment.template.facets.forEach(facet => {
+        const score = Number(latestAssessment.scores[facet.id]);
+        const weight = Number(weights[facet.id] ?? 1);
+        if (!isNaN(score) && !isNaN(weight)) {
+          totalScore += score * weight;
+          totalWeight += weight;
+        }
+      });
+
+      if (totalWeight === 0) return 0;
+      const avgScore = totalScore / totalWeight;
+      return Number(Math.min(avgScore, 5).toFixed(2));
+    } catch (e) {
+      // If schema parsing fails, use simple average
+      const scores = Object.values(latestAssessment.scores)
+        .map(score => Number(score))
+        .filter(score => !isNaN(score));
+      if (!scores.length) return 0;
+      const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+      return Number(Math.min(avgScore, 5).toFixed(2));
+    }
   };
 
   const getTrend = (service: Service) => {
@@ -102,7 +181,28 @@ export function ServicesDataTable({
   const getMatrixType = (service: Service) => {
     if (!service.assessments?.length) return 'Not Set';
     const latestAssessment = getSortedAssessments(service)[0];
-    return latestAssessment.matrixType || 'Not Set';
+    try {
+      // Get the template name from schema
+      const schema = latestAssessment.template?.templateSchema;
+      if (typeof schema === 'string') {
+        const parsed = JSON.parse(schema);
+        return parsed.type || latestAssessment.template?.name || 'Not Set';
+      }
+      return latestAssessment.template?.name || 'Not Set';
+    } catch (e) {
+      return latestAssessment.template?.name || 'Not Set';
+    }
+  };
+
+  const getMatrixTypeBadgeColor = (type: string) => {
+    const colorMap: Record<string, string> = {
+      'DORA': 'bg-blue-100 text-blue-800 border border-blue-200',
+      'SPACE': 'bg-green-100 text-green-800 border border-green-200',
+      'DevOps': 'bg-purple-100 text-purple-800 border border-purple-200',
+      'Cloud': 'bg-orange-100 text-orange-800 border border-orange-200',
+      'Not Set': 'bg-gray-100 text-gray-800 border border-gray-200',
+    };
+    return colorMap[type] || colorMap['Not Set'];
   };
 
   const getLastAssessmentDate = (service: Service) => {
@@ -202,8 +302,13 @@ export function ServicesDataTable({
                 <TableCell>
                   <StatusBadge score={score} />
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {getMatrixType(service)}
+                <TableCell>
+                  <span className={cn(
+                    'inline-flex items-center rounded-full px-2 py-1 text-xs font-medium',
+                    getMatrixTypeBadgeColor(getMatrixType(service))
+                  )}>
+                    {getMatrixType(service)}
+                  </span>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {formatDate(lastAssessmentDate)}

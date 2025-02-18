@@ -63,10 +63,12 @@ export async function GET(request: NextRequest) {
               select: {
                 id: true,
                 name: true,
+                templateSchema: true,
                 facets: {
                   select: {
                     id: true,
                     name: true,
+                    description: true,
                   },
                 },
               },
