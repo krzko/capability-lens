@@ -36,7 +36,7 @@ interface Organisation {
     current: number;
     trend: number;
   };
-  lastAssessmentDate: string;
+  lastAssessmentDate: string | null;
 }
 
 interface OrganisationsDataTableProps {
@@ -59,7 +59,16 @@ export function OrganisationsDataTable({
   };
 
   const getTotalMembers = (org: Organisation) => {
-    return org.teams?.reduce((total, team) => total + (team.members ?? 0), 0) ?? 0;
+    return org.teams?.reduce((total, team) => {
+      // Count unique users across teams
+      const teamMembers = team.members ?? 0;
+      return total + teamMembers;
+    }, 0) ?? 0;
+  };
+
+  const getLastAssessmentDate = (org: Organisation) => {
+    if (!org.lastAssessmentDate) return 'Not assessed';
+    return formatDate(org.lastAssessmentDate);
   };
 
   const formatDate = (date: string) => {
@@ -149,7 +158,7 @@ export function OrganisationsDataTable({
                   </div>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
-                  {org.lastAssessmentDate ? formatDate(org.lastAssessmentDate) : 'Not assessed'}
+                  {getLastAssessmentDate(org)}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">

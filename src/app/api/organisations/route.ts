@@ -27,8 +27,28 @@ export async function GET() {
     }
 
     const organisations = await prisma.organisation.findMany({
+      where: {
+        users: {
+          some: {
+            userId: session.user.id,
+          },
+        },
+      },
       include: {
-        teams: true,
+        teams: {
+          include: {
+            services: {
+              include: {
+                assessments: {
+                  orderBy: {
+                    createdAt: 'desc',
+                  },
+                  take: 1,
+                },
+              },
+            },
+          },
+        },
         users: {
           where: {
             userId: session.user.id,
@@ -37,7 +57,48 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json(organisations);
+    // Calculate maturity and last assessment for each organisation
+    const enrichedOrganisations = organisations.map(org => {
+      let totalMaturity = 0;
+      let totalServices = 0;
+      let latestAssessmentDate = null;
+      let previousMaturity = 0;
+
+      org.teams.forEach(team => {
+        team.services.forEach(service => {
+          totalServices++;
+          if (service.assessments && service.assessments.length > 0) {
+            const latestAssessment = service.assessments[0];
+            totalMaturity += latestAssessment.score || 0;
+            
+            const assessmentDate = new Date(latestAssessment.createdAt);
+            if (!latestAssessmentDate || assessmentDate > new Date(latestAssessmentDate)) {
+              latestAssessmentDate = latestAssessment.createdAt;
+            }
+
+            // Get previous assessment for trend
+            if (service.assessments.length > 1) {
+              previousMaturity += service.assessments[1].score || 0;
+            }
+          }
+        });
+      });
+
+      const avgMaturity = totalServices > 0 ? totalMaturity / totalServices : 0;
+      const avgPreviousMaturity = totalServices > 0 ? previousMaturity / totalServices : 0;
+      const maturityTrend = avgMaturity - avgPreviousMaturity;
+
+      return {
+        ...org,
+        maturity: {
+          current: avgMaturity,
+          trend: maturityTrend,
+        },
+        lastAssessmentDate: latestAssessmentDate,
+      };
+    });
+
+    return NextResponse.json(enrichedOrganisations);
   } catch (error) {
     console.error('Error fetching organisations:', error);
     return NextResponse.json(
