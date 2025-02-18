@@ -72,50 +72,8 @@ export function ServicesDataTable({
   onViewAssessments,
 }: ServicesDataTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const { items: sortedServices, sortConfig, requestSort } = useSort(services, { key: 'name', direction: 'asc' }, {
-    customSort: {
-      maturityScore: (a, b) => {
-        const scoreA = getMaturityScore(a);
-        const scoreB = getMaturityScore(b);
-        // Sort nulls and zeros to the bottom
-        if (scoreA === 0 && scoreB === 0) return 0;
-        if (scoreA === 0) return 1;
-        if (scoreB === 0) return -1;
-        return scoreB - scoreA; // Descending by default
-      },
-      trend: (a, b) => {
-        const trendA = Number(getTrend(a).toFixed(2));
-        const trendB = Number(getTrend(b).toFixed(2));
-        return trendA - trendB;
-      },
-      status: (a, b) => {
-        const aDate = getNextAssessmentDate(getLastAssessmentDate(a));
-        const bDate = getNextAssessmentDate(getLastAssessmentDate(b));
-        if (!aDate && !bDate) return 0;
-        if (!aDate) return 1;
-        if (!bDate) return -1;
-        return aDate.getTime() - bDate.getTime();
-      },
-      matrixType: (a, b) => getMatrixType(a).localeCompare(getMatrixType(b)),
-      lastAssessmentDate: (a, b) => {
-        const aDate = getLastAssessmentDate(a);
-        const bDate = getLastAssessmentDate(b);
-        if (!aDate && !bDate) return 0;
-        if (!aDate) return 1;
-        if (!bDate) return -1;
-        return aDate.getTime() - bDate.getTime();
-      },
-      nextAssessmentDate: (a, b) => {
-        const aDate = getNextAssessmentDate(getLastAssessmentDate(a));
-        const bDate = getNextAssessmentDate(getLastAssessmentDate(b));
-        if (!aDate && !bDate) return 0;
-        if (!aDate) return 1;
-        if (!bDate) return -1;
-        return aDate.getTime() - bDate.getTime();
-      },
-    },
-  });
 
+  // Helper functions
   const getSortedAssessments = (service: Service) => {
     return [...service.assessments].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -194,17 +152,6 @@ export function ServicesDataTable({
     }
   };
 
-  const getMatrixTypeBadgeColor = (type: string) => {
-    const colorMap: Record<string, string> = {
-      'DORA': 'bg-blue-100 text-blue-800 border border-blue-200',
-      'SPACE': 'bg-green-100 text-green-800 border border-green-200',
-      'DevOps': 'bg-purple-100 text-purple-800 border border-purple-200',
-      'Cloud': 'bg-orange-100 text-orange-800 border border-orange-200',
-      'Not Set': 'bg-gray-100 text-gray-800 border border-gray-200',
-    };
-    return colorMap[type] || colorMap['Not Set'];
-  };
-
   const getLastAssessmentDate = (service: Service) => {
     if (!service.assessments?.length) return null;
     const latestAssessment = getSortedAssessments(service)[0];
@@ -217,6 +164,80 @@ export function ServicesDataTable({
     nextAssessment.setMonth(nextAssessment.getMonth() + 3);
     return nextAssessment;
   };
+
+  const getMatrixTypeBadgeColor = (type: string) => {
+    const colorMap: Record<string, string> = {
+      'DORA': 'bg-blue-100 text-blue-800 border border-blue-200',
+      'SPACE': 'bg-green-100 text-green-800 border border-green-200',
+      'DevOps': 'bg-purple-100 text-purple-800 border border-purple-200',
+      'Cloud': 'bg-orange-100 text-orange-800 border border-orange-200',
+      'Not Set': 'bg-gray-100 text-gray-800 border border-gray-200',
+    };
+    return colorMap[type] || colorMap['Not Set'];
+  };
+
+  // Sort functions
+  const sortByMaturityScore = React.useCallback((a: Service, b: Service) => {
+    const scoreA = getMaturityScore(a);
+    const scoreB = getMaturityScore(b);
+    // Always sort zeros to the bottom, regardless of sort direction
+    if (scoreA === 0 && scoreB === 0) return 0;
+    if (scoreA === 0) return 1;
+    if (scoreB === 0) return -1;
+    // Natural order (asc) means lower scores first
+    return scoreA - scoreB;
+  }, []);
+
+  const sortByTrend = React.useCallback((a: Service, b: Service) => {
+    const trendA = getTrend(a);
+    const trendB = getTrend(b);
+    if (isNaN(trendA) && isNaN(trendB)) return 0;
+    if (isNaN(trendA)) return 1;
+    if (isNaN(trendB)) return -1;
+    return trendA - trendB;
+  }, []);
+
+  const sortByStatus = React.useCallback((a: Service, b: Service) => {
+    const aDate = getNextAssessmentDate(getLastAssessmentDate(a));
+    const bDate = getNextAssessmentDate(getLastAssessmentDate(b));
+    if (!aDate && !bDate) return 0;
+    if (!aDate) return 1;
+    if (!bDate) return -1;
+    return aDate.getTime() - bDate.getTime();
+  }, []);
+
+  const sortByMatrixType = React.useCallback((a: Service, b: Service) => {
+    return getMatrixType(a).localeCompare(getMatrixType(b));
+  }, []);
+
+  const sortByLastAssessmentDate = React.useCallback((a: Service, b: Service) => {
+    const aDate = getLastAssessmentDate(a);
+    const bDate = getLastAssessmentDate(b);
+    if (!aDate && !bDate) return 0;
+    if (!aDate) return 1;
+    if (!bDate) return -1;
+    return aDate.getTime() - bDate.getTime();
+  }, []);
+
+  const sortByNextAssessmentDate = React.useCallback((a: Service, b: Service) => {
+    const aDate = getNextAssessmentDate(getLastAssessmentDate(a));
+    const bDate = getNextAssessmentDate(getLastAssessmentDate(b));
+    if (!aDate && !bDate) return 0;
+    if (!aDate) return 1;
+    if (!bDate) return -1;
+    return aDate.getTime() - bDate.getTime();
+  }, []);
+
+  const { items: sortedServices, sortConfig, requestSort } = useSort(services, { key: 'maturityScore', direction: 'desc' }, {
+    customSort: {
+      maturityScore: sortByMaturityScore,
+      trend: sortByTrend,
+      status: sortByStatus,
+      matrixType: sortByMatrixType,
+      lastAssessmentDate: sortByLastAssessmentDate,
+      nextAssessmentDate: sortByNextAssessmentDate,
+    },
+  });
 
   const formatDate = (date: Date | null) => {
     if (!date) return 'Never';
