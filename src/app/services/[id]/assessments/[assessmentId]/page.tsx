@@ -1,11 +1,14 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { useParams } from 'next/navigation';
 import Layout from '@/components/layout/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { RadialChart } from '@/components/dashboard/RadialChart';
-import { HeatmapCard } from '@/components/dashboard/HeatmapCard';
-import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { AssessmentSummaryBar } from '@/components/assessments/AssessmentSummaryBar';
+import { AssessmentOverview } from '@/components/assessments/AssessmentOverview';
+import { FacetCard } from '@/components/assessments/FacetCard';
+import { Share2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Assessment {
   id: string;
@@ -13,9 +16,6 @@ interface Assessment {
   template: {
     id: string;
     name: string;
-    description: string;
-    templateSchema: Record<string, any>;
-    version: string;
   };
   service: {
     id: string;
@@ -29,161 +29,158 @@ interface Assessment {
       };
     };
   };
-  scores: Record<string, number>;
-}
-
-interface PageProps {
-  params: {
+  assessor?: string;
+  facets: Array<{
     id: string;
-    assessmentId: string;
-  };
+    name: string;
+    score: number;
+    previousScore: number;
+    description: string;
+    levels: Array<{
+      id: string;
+      number: number;
+      name: string;
+      description: string;
+    }>;
+    recommendations: string[];
+    evidence?: string;
+    historicalData: Array<{
+      date: string;
+      score: number;
+    }>;
+  }>;
 }
 
-async function fetchAssessment(serviceId: string, assessmentId: string): Promise<Assessment> {
-  const response = await fetch(
-    `/api/services/${serviceId}/assessments/${assessmentId}`,
-    { 
-      cache: 'no-store',
-      headers: {
-        'Accept': 'application/json'
-      }
-    }
-  );
-  
-  if (!response.ok) {
-    throw new Error('Failed to fetch assessment');
-  }
-  
-  return response.json();
-}
-
-function AssessmentContent({ serviceId, assessmentId }: { serviceId: string; assessmentId: string }) {
+export default function AssessmentPage() {
+  const params = useParams<{ id: string; assessmentId: string }>();
   const [assessment, setAssessment] = useState<Assessment | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const facetRefs = useRef<{ [key: string]: HTMLDivElement }>({});
 
   useEffect(() => {
-    const loadAssessment = async () => {
-      try {
-        const data = await fetchAssessment(serviceId, assessmentId);
+    if (!params.id || !params.assessmentId) return;
+
+    fetch(`/api/services/${params.id}/assessments/${params.assessmentId}`)
+      .then(async res => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
+      .then(data => {
+        if (!data || !data.service || !data.service.team) {
+          throw new Error('Invalid assessment data received');
+        }
         setAssessment(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load assessment');
-      } finally {
-        setLoading(false);
-      }
-    };
+      })
+      .catch(error => {
+        console.error('Error fetching assessment:', error);
+        setError(error.message || 'Failed to load assessment');
+      })
+      .finally(() => setLoading(false));
+  }, [params.id, params.assessmentId]);
 
-    loadAssessment();
-  }, [serviceId, assessmentId]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
-      </div>
-    );
-  }
+  const handleJumpToFacet = (facetName: string) => {
+    const element = facetRefs.current[facetName];
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   if (error) {
     return (
-      <div className="text-red-500 text-center py-8">
-        {error}
-      </div>
+      <Layout>
+        <div className="container py-6">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative">
+            <strong className="font-bold">Error: </strong>
+            <span className="block sm:inline">{error}</span>
+          </div>
+        </div>
+      </Layout>
     );
   }
 
-  if (!assessment) {
+  if (loading || !assessment) {
     return (
-      <div className="text-gray-500 text-center py-8">
-        Assessment not found
-      </div>
+      <Layout>
+        <div className="container py-6 space-y-6">
+        <Skeleton className="h-[120px] w-full" />
+        <Skeleton className="h-[400px] w-full" />
+        <div className="space-y-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-[200px] w-full" />
+          ))}
+        </div>
+        </div>
+      </Layout>
     );
   }
 
-  return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">{assessment.template.name}</h1>
-        <p className="mt-2 text-sm text-gray-600">
-          Assessment details for {assessment.service.name}
-        </p>
-      </div>
+  // Ensure scores are numbers and handle NaN/undefined
+  const validScores = assessment.facets.map(f => typeof f.score === 'number' ? f.score : 0);
+  const validPreviousScores = assessment.facets.map(f => typeof f.previousScore === 'number' ? f.previousScore : 0);
+  
+  const overallScore = validScores.reduce((sum, score) => sum + score, 0) / validScores.length;
+  const previousOverallScore = validPreviousScores.reduce((sum, score) => sum + score, 0) / validPreviousScores.length;
 
-      <div className="grid gap-6 sm:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Service Details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div>
-                <h3 className="text-sm font-medium text-gray-700">Organisation</h3>
-                <p className="text-sm text-gray-600">{assessment.service.team.organisation.name}</p>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-gray-700">Team</h3>
-                <p className="text-sm text-gray-600">{assessment.service.team.name}</p>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-gray-700">Service</h3>
-                <p className="text-sm text-gray-600">{assessment.service.name}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+  // Calculate next assessment date (3 months from assessment date)
+  const assessmentDate = new Date(assessment.createdAt);
+  const nextDueDate = new Date(assessmentDate);
+  nextDueDate.setMonth(nextDueDate.getMonth() + 3);
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Assessment Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div>
-                <h3 className="text-sm font-medium text-gray-700">Template</h3>
-                <p className="text-sm text-gray-600">{assessment.template.name}</p>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-gray-700">Assessment Date</h3>
-                <p className="text-sm text-gray-600">
-                  {new Date(assessment.createdAt).toLocaleDateString('en-AU', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric'
-                  })}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="mt-8">
-        <HeatmapCard
-          organisation={assessment.service.team.organisation.name}
-          team={assessment.service.team.name}
-          serviceName={assessment.service.name}
-          assessments={[{
-            templateName: assessment.template.name,
-            createdAt: assessment.createdAt,
-            facets: Object.entries(assessment.scores).map(([name, score]) => ({
-              name,
-              score,
-              maxScore: 5, // Assuming max score is 5, adjust if different
-            })),
-          }]}
-        />
-      </div>
-    </div>
-  );
-}
-
-export default function AssessmentPage({ params }: PageProps) {
   return (
     <Layout>
-      <Suspense fallback={<div className="text-sm text-gray-500">Loading assessment details...</div>}>
-        <AssessmentContent serviceId={params.id} assessmentId={params.assessmentId} />
-      </Suspense>
+      <div className="container py-6">
+        {/* Header Section */}
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-semibold text-gray-900">
+              Assessment for {assessment.service.name}
+            </h1>
+            <div className="flex items-center space-x-4">
+              <Button variant="outline">
+                Export as PDF
+              </Button>
+              <Button variant="outline">
+                <Share2 className="w-4 h-4 mr-2" />
+                Share
+              </Button>
+              <Button>
+                Create Improvement Plan
+              </Button>
+            </div>
+          </div>
+          
+          <AssessmentSummaryBar assessmentId={params.assessmentId} />
+        </div>
+
+        {/* Overview Section */}
+        <div className="bg-white rounded-lg shadow mb-8">
+          <AssessmentOverview
+            assessmentId={params.assessmentId}
+            onJumpToFacet={handleJumpToFacet}
+          />
+        </div>
+
+        {/* Facets Section */}
+        <div className="grid gap-6">
+          {assessment.facets.map((facet) => (
+            <div
+              key={facet.name}
+              ref={el => {
+                if (el) facetRefs.current[facet.name] = el;
+              }}
+              className="bg-white rounded-lg shadow"
+            >
+              <FacetCard
+                assessmentId={params.assessmentId}
+                facetId={facet.id}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
     </Layout>
   );
 }

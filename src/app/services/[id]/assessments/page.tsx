@@ -30,7 +30,7 @@ export default function ServiceAssessmentsPage() {
     setStep('form');
   };
 
-  const handleAssessmentSubmit = async (scores: Record<string, number>) => {
+  const handleAssessmentSubmit = async (scores: Record<string, { score: number; evidence?: string }>) => {
     try {
       await createAssessment(selectedTemplateId, scores);
       setStep('results');

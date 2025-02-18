@@ -103,8 +103,8 @@ model MaturityTemplate {
   facets      Facet[]
   assessments Assessment[]
   isCustom    Boolean       @default(true)
-  templateSchema Json?         // Store the complete JSON schema for custom templates
-  version       String?       @default("0.1.0")
+  templateSchema Json        // Store the complete JSON schema including facet definitions
+  version     String        @default("0.1.0")
   createdBy   String?       // User ID who created the custom template
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -158,7 +158,8 @@ model Assessment {
   templateId  String
   service     Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
   serviceId   String
-  scores      Json     // Will store facet scores as {facetId: score}
+  scores      Json     // Store facet scores and evidence as {facetName: { score: number, evidence?: string }}
+  assessor    String?  // Name or ID of the person who performed the assessment
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

@@ -3,10 +3,134 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export async function seedDoraTemplate() {
+  // Create the template schema structure
+  const templateSchema = {
+    type: 'object',
+    properties: {
+      'Deployment Frequency': {
+        type: 'object',
+        description: 'How often does your organisation deploy code to production?',
+        recommendations: [
+          'Implement continuous integration',
+          'Automate deployment processes',
+          'Use feature flags for safer deployments',
+          'Implement automated testing'
+        ],
+        evidence: '',
+        levels: [
+          {
+            level: 1,
+            name: 'Low',
+            description: 'Deployments happen less frequently than once per month.'
+          },
+          {
+            level: 2,
+            name: 'Medium-Low',
+            description: 'Deployments occur between once per month and once per week.'
+          },
+          {
+            level: 3,
+            name: 'Medium',
+            description: 'Deployments happen between once per week and once per day.'
+          },
+          {
+            level: 4,
+            name: 'Medium-High',
+            description: 'Multiple deployments per day.'
+          },
+          {
+            level: 5,
+            name: 'Elite',
+            description: 'On-demand deployments (multiple times per day).'
+          }
+        ]
+      },
+      'Lead Time for Changes': {
+        type: 'object',
+        description: 'How long does it take to go from code commit to code running in production?',
+        recommendations: [
+          'Automate build and test processes',
+          'Implement trunk-based development',
+          'Reduce approval bottlenecks',
+          'Use automated code review tools'
+        ],
+        evidence: '',
+        levels: [
+          {
+            level: 1,
+            name: 'Low',
+            description: 'More than six months.'
+          },
+          {
+            level: 2,
+            name: 'Medium-Low',
+            description: 'Between one month and six months.'
+          },
+          {
+            level: 3,
+            name: 'Medium',
+            description: 'Between one week and one month.'
+          },
+          {
+            level: 4,
+            name: 'Medium-High',
+            description: 'Between one day and one week.'
+          },
+          {
+            level: 5,
+            name: 'Elite',
+            description: 'Less than one day.'
+          }
+        ]
+      },
+      'Time to Restore Service': {
+        type: 'object',
+        description: 'How long does it take to restore service when an incident occurs?',
+        recommendations: [
+          'Implement automated monitoring',
+          'Create incident response playbooks',
+          'Practice incident scenarios',
+          'Use automated rollback capabilities'
+        ],
+        evidence: '',
+        levels: [
+          {
+            level: 1,
+            name: 'Low',
+            description: 'More than one week.'
+          },
+          {
+            level: 2,
+            name: 'Medium-Low',
+            description: 'Between one day and one week.'
+          },
+          {
+            level: 3,
+            name: 'Medium',
+            description: 'Less than one day.'
+          },
+          {
+            level: 4,
+            name: 'Medium-High',
+            description: 'Less than one hour.'
+          },
+          {
+            level: 5,
+            name: 'Elite',
+            description: 'Less than ten minutes.'
+          }
+        ]
+      }
+    }
+  };
+
   const template = await prisma.maturityTemplate.create({
     data: {
       name: 'DORA Metrics Maturity Matrix',
       description: 'Assess your DevOps capabilities using DORA (DevOps Research and Assessment) metrics.',
+      templateSchema,
+      version: '0.1.0',
+      isCustom: false,
       facets: {
         create: [
           {

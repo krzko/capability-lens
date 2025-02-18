@@ -3,10 +3,210 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export async function seedObservabilityTemplate() {
+  // First create the template schema structure
+  const templateSchema = {
+    type: 'object',
+    properties: {
+      'Data Collection and Quality': {
+        type: 'object',
+        description: 'Assessment of telemetry collection practices and data quality standards.',
+        recommendations: [
+          'Implement OpenTelemetry across all services',
+          'Establish standardised attribute conventions',
+          'Define and implement sampling strategies',
+          'Validate telemetry data quality regularly'
+        ],
+        evidence: '',
+        levels: [
+          {
+            level: 1,
+            name: 'Foundation',
+            description: 'Services at this level demonstrate basic telemetry collection. Teams collect logs and metrics without standardization.'
+          },
+          {
+            level: 2,
+            name: 'Standardisation',
+            description: 'Services implement consistent logging patterns and basic metric collection.'
+          },
+          {
+            level: 3,
+            name: 'Integration',
+            description: 'Services demonstrate comprehensive OpenTelemetry instrumentation with standardized attributes.'
+          },
+          {
+            level: 4,
+            name: 'Optimisation',
+            description: 'Services showcase advanced context propagation across boundaries.'
+          },
+          {
+            level: 5,
+            name: 'Innovation',
+            description: 'Services feature automated detection of instrumentation gaps.'
+          }
+        ]
+      },
+      'Service Level Objectives (SLOs)': {
+        type: 'object',
+        description: 'Evaluation of SLO implementation and usage for reliability management.',
+        recommendations: [
+          'Define clear SLOs for all critical user journeys',
+          'Implement error budget policies',
+          'Automate SLO tracking and reporting',
+          'Align SLOs with business objectives'
+        ],
+        evidence: '',
+        levels: [
+          {
+            level: 1,
+            name: 'Foundation',
+            description: 'Services have basic uptime monitoring without clearly defined SLOs.'
+          },
+          {
+            level: 2,
+            name: 'Standardisation',
+            description: 'Services have fundamental SLOs with basic error budget policies.'
+          },
+          {
+            level: 3,
+            name: 'Integration',
+            description: 'Services maintain well-defined SLOs with appropriate SLIs reflecting user experience.'
+          },
+          {
+            level: 4,
+            name: 'Optimisation',
+            description: 'Services feature a robust SLO framework with automated error budget tracking.'
+          },
+          {
+            level: 5,
+            name: 'Innovation',
+            description: 'Services demonstrate industry-leading SLO practices.'
+          }
+        ]
+      },
+      'Troubleshooting Effectiveness': {
+        type: 'object',
+        description: 'Assessment of incident response and troubleshooting capabilities.',
+        recommendations: [
+          'Implement comprehensive tracing',
+          'Create detailed runbooks',
+          'Establish incident response procedures',
+          'Use automated root cause analysis'
+        ],
+        evidence: '',
+        levels: [
+          {
+            level: 1,
+            name: 'Foundation',
+            description: 'Basic troubleshooting with limited tooling and ad-hoc processes.'
+          },
+          {
+            level: 2,
+            name: 'Standardisation',
+            description: 'Standard debugging tools and basic incident response procedures.'
+          },
+          {
+            level: 3,
+            name: 'Integration',
+            description: 'Comprehensive tracing and well-defined incident management.'
+          },
+          {
+            level: 4,
+            name: 'Optimisation',
+            description: 'Advanced diagnostics with automated root cause analysis.'
+          },
+          {
+            level: 5,
+            name: 'Innovation',
+            description: 'AI-assisted troubleshooting and predictive issue detection.'
+          }
+        ]
+      },
+      'Operational Excellence': {
+        type: 'object',
+        description: 'Evaluation of operational practices and tooling maturity.',
+        recommendations: [
+          'Implement comprehensive dashboards',
+          'Establish alert correlation',
+          'Automate runbooks',
+          'Define clear incident response processes'
+        ],
+        evidence: '',
+        levels: [
+          {
+            level: 1,
+            name: 'Foundation',
+            description: 'Basic dashboards and minimal alerting with informal processes.'
+          },
+          {
+            level: 2,
+            name: 'Standardisation',
+            description: 'Standard dashboards and consistent alerting with documented processes.'
+          },
+          {
+            level: 3,
+            name: 'Integration',
+            description: 'Comprehensive dashboards with alert correlation and tested processes.'
+          },
+          {
+            level: 4,
+            name: 'Optimisation',
+            description: 'Advanced metrics and automated runbooks with data-driven improvements.'
+          },
+          {
+            level: 5,
+            name: 'Innovation',
+            description: 'AI-powered operations with self-updating runbooks.'
+          }
+        ]
+      },
+      'Performance Optimisation': {
+        type: 'object',
+        description: 'Assessment of performance monitoring and optimization practices.',
+        recommendations: [
+          'Implement continuous profiling',
+          'Establish performance baselines',
+          'Automate performance testing',
+          'Use data-driven optimization'
+        ],
+        evidence: '',
+        levels: [
+          {
+            level: 1,
+            name: 'Foundation',
+            description: 'Basic performance monitoring with reactive optimization.'
+          },
+          {
+            level: 2,
+            name: 'Standardisation',
+            description: 'Regular performance testing with established baselines.'
+          },
+          {
+            level: 3,
+            name: 'Integration',
+            description: 'Continuous profiling with regular optimization reviews.'
+          },
+          {
+            level: 4,
+            name: 'Optimisation',
+            description: 'Advanced analytics with automated regression detection.'
+          },
+          {
+            level: 5,
+            name: 'Innovation',
+            description: 'ML-based optimization with automated capacity planning.'
+          }
+        ]
+      }
+    }
+  };
+
   const template = await prisma.maturityTemplate.create({
     data: {
       name: 'Observability Maturity Matrix',
       description: 'A comprehensive framework for assessing observability practices and capabilities.',
+      templateSchema,
+      version: '0.1.0',
+      isCustom: false,
       facets: {
         create: [
           {
@@ -205,5 +405,54 @@ export async function seedObservabilityTemplate() {
   });
 
   console.log('Created Observability Maturity Matrix template:', template.id);
+
+  // Create a sample service and assessment
+  const team = await prisma.team.create({
+    data: {
+      name: 'Platform Engineering',
+      organisation: {
+        create: {
+          name: 'Example Org'
+        }
+      }
+    }
+  });
+
+  const service = await prisma.service.create({
+    data: {
+      name: 'API Gateway',
+      description: 'Core API Gateway service',
+      teamId: team.id
+    }
+  });
+
+  // Create an assessment with the new schema structure
+  const assessment = await prisma.assessment.create({
+    data: {
+      templateId: template.id,
+      serviceId: service.id,
+      assessor: 'System',
+      scores: {
+        'Data Collection and Quality': {
+          score: 2,
+          evidence: 'Initial OpenTelemetry implementation with basic logging patterns.'
+        },
+        'Service Level Objectives (SLOs)': {
+          score: 3,
+          evidence: 'Well-defined SLOs with error budget policies in place.'
+        },
+        'Troubleshooting Effectiveness': {
+          score: 2,
+          evidence: 'Basic troubleshooting procedures documented.'
+        },
+        'Performance Optimisation': {
+          score: 1,
+          evidence: 'Initial performance monitoring setup.'
+        }
+      }
+    }
+  });
+
+  console.log('Created sample assessment:', assessment.id);
   return template;
 }

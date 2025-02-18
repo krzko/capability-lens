@@ -12,6 +12,17 @@ interface Assessment {
     id: string;
     name: string;
   };
+  service: {
+    id: string;
+    name: string;
+    team: {
+      name: string;
+      organisation: {
+        name: string;
+      };
+    };
+  };
+  overallScore?: number;
 }
 
 export function ViewAssessments() {
@@ -78,27 +89,68 @@ export function ViewAssessments() {
       {selectedService && (
         <div className="space-y-4">
           {loading ? (
-            <div className="text-sm text-gray-500">Loading assessments...</div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardHeader>
+                    <div className="h-4 bg-gray-200 rounded w-3/4" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="h-4 bg-gray-200 rounded w-1/2" />
+                      <div className="h-8 bg-gray-200 rounded w-full" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           ) : assessments.length === 0 ? (
-            <div className="text-sm text-gray-500">No assessments found for this service</div>
+            <Card>
+              <CardContent className="py-8">
+                <div className="text-center text-muted-foreground">
+                  <p>No assessments found for this service</p>
+                  <Button
+                    variant="outline"
+                    className="mt-4"
+                    onClick={() => router.push('/assessments/new')}
+                  >
+                    Create New Assessment
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {assessments.map((assessment) => (
-                <Card key={assessment.id}>
+                <Card key={assessment.id} className="hover:bg-accent/5">
                   <CardHeader>
-                    <CardTitle className="text-sm">{assessment.template.name}</CardTitle>
+                    <CardTitle className="text-lg">{assessment.template.name}</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      {assessment.service.team.organisation.name} / {assessment.service.team.name}
+                    </p>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-2">
-                      <p className="text-sm text-gray-500">
-                        Created: {new Date(assessment.createdAt).toLocaleDateString()}
-                      </p>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <div className="text-sm text-muted-foreground">
+                          {new Date(assessment.createdAt).toLocaleDateString('en-AU', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric',
+                          })}
+                        </div>
+                        {assessment.overallScore && (
+                          <div className="text-lg font-semibold">
+                            {assessment.overallScore.toFixed(1)}/5
+                          </div>
+                        )}
+                      </div>
                       <Button
                         variant="outline"
                         className="w-full"
                         onClick={() => handleViewAssessment(assessment.id)}
                       >
-                        View Details
+                        View Assessment
                       </Button>
                     </div>
                   </CardContent>
