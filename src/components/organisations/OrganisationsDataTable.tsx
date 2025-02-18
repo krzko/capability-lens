@@ -149,12 +149,8 @@ export function OrganisationsDataTable({
                   {getTotalMembers(org)}
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center justify-end">
                     <MaturityProgress score={org.maturity?.current ?? 0} size="sm" />
-                    <TrendIndicator
-                      value={org.maturity?.trend ?? 0}
-                      className="text-xs"
-                    />
                   </div>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">

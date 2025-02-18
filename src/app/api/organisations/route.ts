@@ -59,6 +59,7 @@ export async function GET() {
 
     // Calculate maturity and last assessment for each organisation
     const enrichedOrganisations = organisations.map(org => {
+      console.log(`Calculating maturity for org: ${org.name}`);
       let totalMaturity = 0;
       let totalServices = 0;
       let latestAssessmentDate = null;
@@ -66,19 +67,32 @@ export async function GET() {
 
       org.teams.forEach(team => {
         team.services.forEach(service => {
-          totalServices++;
           if (service.assessments && service.assessments.length > 0) {
             const latestAssessment = service.assessments[0];
-            totalMaturity += latestAssessment.score || 0;
-            
-            const assessmentDate = new Date(latestAssessment.createdAt);
-            if (!latestAssessmentDate || assessmentDate > new Date(latestAssessmentDate)) {
-              latestAssessmentDate = latestAssessment.createdAt;
-            }
+            if (latestAssessment.scores) {
+              const scores = Object.values(latestAssessment.scores);
+              if (scores.length > 0) {
+                totalServices++;
+                const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+                totalMaturity += avgScore;
+                
+                const assessmentDate = new Date(latestAssessment.createdAt);
+                if (!latestAssessmentDate || assessmentDate > new Date(latestAssessmentDate)) {
+                  latestAssessmentDate = latestAssessment.createdAt;
+                }
 
-            // Get previous assessment for trend
-            if (service.assessments.length > 1) {
-              previousMaturity += service.assessments[1].score || 0;
+                // Calculate previous maturity for trend
+                if (service.assessments.length > 1) {
+                  const previousAssessment = service.assessments[1];
+                  if (previousAssessment.scores) {
+                    const prevScores = Object.values(previousAssessment.scores);
+                    if (prevScores.length > 0) {
+                      const prevAvgScore = prevScores.reduce((a, b) => a + b, 0) / prevScores.length;
+                      previousMaturity += prevAvgScore;
+                    }
+                  }
+                }
+              }
             }
           }
         });
@@ -87,6 +101,14 @@ export async function GET() {
       const avgMaturity = totalServices > 0 ? totalMaturity / totalServices : 0;
       const avgPreviousMaturity = totalServices > 0 ? previousMaturity / totalServices : 0;
       const maturityTrend = avgMaturity - avgPreviousMaturity;
+
+      console.log(`Org ${org.name} final stats:`, {
+        totalServices,
+        totalMaturity,
+        avgMaturity,
+        maturityTrend,
+        lastAssessmentDate: latestAssessmentDate
+      });
 
       return {
         ...org,
