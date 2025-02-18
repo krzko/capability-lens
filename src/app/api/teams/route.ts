@@ -73,8 +73,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const json = await request.json();
-    const validatedData = teamSchema.parse(json);
+    let json;
+    try {
+      json = await request.json();
+    } catch (e) {
+      return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 });
+    }
+
+    let validatedData;
+    try {
+      validatedData = teamSchema.parse(json);
+    } catch (e) {
+      if (e instanceof z.ZodError) {
+        return NextResponse.json({ 
+          error: 'Validation error', 
+          details: e.errors.map(err => ({ 
+            path: err.path.join('.'), 
+            message: err.message 
+          }))
+        }, { status: 400 });
+      }
+      throw e;
+    }
 
     // Check if user has access to the organisation
     const userAccess = await prisma.organisationUser.findFirst({
@@ -85,7 +105,10 @@ export async function POST(request: NextRequest) {
     });
 
     if (!userAccess) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ 
+        error: 'Forbidden', 
+        message: 'You do not have access to this organisation' 
+      }, { status: 403 });
     }
 
     const team = await prisma.team.create({

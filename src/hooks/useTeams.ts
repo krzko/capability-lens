@@ -61,16 +61,25 @@ export function useTeams(organisationId?: string): UseTeamsReturn {
         body: JSON.stringify({ name, organisationId }),
       });
 
+      const data = await response.json();
+      
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to create team');
+        if (data.details) {
+          // Handle validation errors
+          const errorMessage = data.details
+            .map((err: { path: string; message: string }) => `${err.path}: ${err.message}`)
+            .join(', ');
+          throw new Error(errorMessage);
+        }
+        throw new Error(data.message || data.error || 'Failed to create team');
       }
 
       await fetchTeams();
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      throw err;
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      setError(errorMessage);
+      throw new Error(errorMessage);
     }
   };
 
@@ -84,16 +93,18 @@ export function useTeams(organisationId?: string): UseTeamsReturn {
         body: JSON.stringify({ name }),
       });
 
+      const data = await response.json();
+      
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to update team');
+        throw new Error(data.message || data.error || 'Failed to update team');
       }
 
       await fetchTeams();
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      throw err;
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      setError(errorMessage);
+      throw new Error(errorMessage);
     }
   };
 
@@ -103,16 +114,18 @@ export function useTeams(organisationId?: string): UseTeamsReturn {
         method: 'DELETE',
       });
 
+      const data = await response.json();
+      
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to delete team');
+        throw new Error(data.message || data.error || 'Failed to delete team');
       }
 
       await fetchTeams();
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      throw err;
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      setError(errorMessage);
+      throw new Error(errorMessage);
     }
   };
 

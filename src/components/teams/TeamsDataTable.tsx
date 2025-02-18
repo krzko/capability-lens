@@ -49,6 +49,8 @@ interface TeamsDataTableProps {
     maturityTrend?: number;
   }>;
   onView: (team: any) => void;
+  onEdit: (team: any) => void;
+  onDelete: (team: any) => void;
 }
 
 interface TeamAssessmentStatus {
@@ -56,7 +58,7 @@ interface TeamAssessmentStatus {
   date?: string;
 }
 
-export function TeamsDataTable({ teams, onView }: TeamsDataTableProps) {
+export function TeamsDataTable({ teams, onView, onEdit, onDelete }: TeamsDataTableProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const { items: sortedTeams, sortConfig, requestSort } = useSort(teams, { key: 'name', direction: 'asc' });
 
@@ -238,13 +240,14 @@ export function TeamsDataTable({ teams, onView }: TeamsDataTableProps) {
                           <DropdownMenuItem onClick={() => onView(team)}>
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onEdit(team)}>
                             Edit Team
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            Start Assessment
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600">
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => onDelete(team)}
+                            className="text-red-600"
+                          >
                             Delete Team
                           </DropdownMenuItem>
                         </DropdownMenuContent>

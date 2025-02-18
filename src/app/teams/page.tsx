@@ -99,6 +99,8 @@ export default function Teams() {
               <TeamsDataTable
                 teams={teams}
                 onView={handleView}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
               />
             </div>
           )}
@@ -116,21 +118,23 @@ export default function Teams() {
                 </DialogDescription>
               </DialogHeader>
               <TeamForm
-                onClose={() => {
-                  setIsFormOpen(false);
-                  setEditingTeam(null);
-                }}
-                onSubmit={async (data) => {
+                initialData={editingTeam || undefined}
+                organisationId={selectedOrgId}
+                onSubmit={async (name, organisationId) => {
                   if (editingTeam) {
-                    await updateTeam(editingTeam.id, data);
+                    await updateTeam(editingTeam.id, name);
                   } else {
-                    await createTeam(data);
+                    await createTeam(name, organisationId);
                   }
                   setIsFormOpen(false);
                   setEditingTeam(null);
+                  setSelectedOrgId(undefined);
                 }}
-                team={editingTeam}
-                selectedOrgId={selectedOrgId}
+                onCancel={() => {
+                  setIsFormOpen(false);
+                  setEditingTeam(null);
+                  setSelectedOrgId(undefined);
+                }}
               />
             </DialogContent>
           </Dialog>

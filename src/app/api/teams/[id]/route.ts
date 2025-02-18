@@ -82,6 +82,31 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Parse and validate request body
+    let json;
+    try {
+      json = await request.json();
+    } catch (e) {
+      return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 });
+    }
+
+    let validatedData;
+    try {
+      validatedData = teamSchema.parse(json);
+    } catch (e) {
+      if (e instanceof z.ZodError) {
+        return NextResponse.json({ 
+          error: 'Validation error', 
+          details: e.errors.map(err => ({ 
+            path: err.path.join('.'), 
+            message: err.message 
+          }))
+        }, { status: 400 });
+      }
+      throw e;
+    }
+
+    // Check if team exists and user has access
     const team = await prisma.team.findFirst({
       where: {
         id,
@@ -89,19 +114,21 @@ export async function PUT(
           users: {
             some: {
               userId: session.user.id,
-              role: 'admin',
             },
           },
         },
       },
+      include: {
+        organisation: true,
+      },
     });
 
     if (!team) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ 
+        error: 'Not found', 
+        message: 'Team not found or you do not have access' 
+      }, { status: 404 });
     }
-
-    const json = await request.json();
-    const validatedData = teamSchema.parse(json);
 
     const updatedTeam = await prisma.team.update({
       where: { id },
@@ -142,6 +169,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Check if team exists and user has access
     const team = await prisma.team.findFirst({
       where: {
         id,
@@ -149,34 +177,39 @@ export async function DELETE(
           users: {
             some: {
               userId: session.user.id,
-              role: 'admin',
             },
           },
         },
       },
+      include: {
+        services: true,
+        organisation: true,
+      },
     });
 
     if (!team) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ 
+        error: 'Not found', 
+        message: 'Team not found or you do not have access' 
+      }, { status: 404 });
     }
 
-    // Check for associated services
-    const servicesCount = await prisma.service.count({
-      where: { teamId: id },
-    });
-
-    if (servicesCount > 0) {
-      return NextResponse.json(
-        { error: 'Cannot delete team: Please remove all services first' },
-        { status: 400 }
-      );
+    // Check if team has any services
+    if (team.services.length > 0) {
+      return NextResponse.json({ 
+        error: 'Conflict', 
+        message: 'Cannot delete team with existing services' 
+      }, { status: 409 });
     }
 
+    // Delete the team
     await prisma.team.delete({
       where: { id },
     });
 
-    return new NextResponse(null, { status: 204 });
+    return NextResponse.json({ 
+      message: 'Team deleted successfully' 
+    });
   } catch (error) {
     console.error('Error deleting team:', error);
     return NextResponse.json(
